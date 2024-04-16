@@ -11,7 +11,7 @@
 #define HC_PIN_4_0 12
 #define HC_PIN_4_1 13
 #define OOB(a) ((a)>200?0:(a))//Out of bounds returns 0 if out of bounds
-#define INT_DIV_2(a) ((a)>>1)
+#define UINT_DIV_2(a) ((a)>>1)
 #define NUM_DIST_SENS 5
 #define PWM_PIN_1 9 // Predefined PWM output pin
 #define PWM_PIN_2 10
@@ -112,11 +112,11 @@ bool processBuffer()
 
 uint8_t * readSensors(){
 	uint8_t *sensorArray = new uint8_t[NUM_DIST_SENS];
-	uint8_t sensorValue0 = INT_DIV_2(distanceSensor0.read(CM)); // divides the number by 2
-	uint8_t sensorValue1 = INT_DIV_2(distanceSensor1.read(CM));
-	uint8_t sensorValue2 = INT_DIV_2(distanceSensor2.read(CM));
-	uint8_t sensorValue3 = INT_DIV_2(distanceSensor3.read(CM));
-	uint8_t sensorValue4 = INT_DIV_2(distanceSensor4.read(CM));
+	uint8_t sensorValue0 = UINT_DIV_2(distanceSensor0.read(CM)); // divides the number by 2
+	uint8_t sensorValue1 = UINT_DIV_2(distanceSensor1.read(CM));
+	uint8_t sensorValue2 = UINT_DIV_2(distanceSensor2.read(CM));
+	uint8_t sensorValue3 = UINT_DIV_2(distanceSensor3.read(CM));
+	uint8_t sensorValue4 = UINT_DIV_2(distanceSensor4.read(CM));
 	sensorArray[0] = OOB(sensorValue0); //cuts off the number at 200
 	sensorArray[1] = OOB(sensorValue1);
 	sensorArray[2] = OOB(sensorValue2);
