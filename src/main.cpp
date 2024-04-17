@@ -1,22 +1,24 @@
 #include <Arduino.h>
 #include <Ultrasonic.h>
-#define HC_PIN_0_0 3
-#define HC_PIN_0_1 5
-#define HC_PIN_1_0 6
-#define HC_PIN_1_1 7
-#define HC_PIN_2_0 8
-#define HC_PIN_2_1 9
-#define HC_PIN_3_0 10
-#define HC_PIN_3_1 11
-#define HC_PIN_4_0 12
-#define HC_PIN_4_1 13
+#define HC_PIN_0_0 30
+#define HC_PIN_0_1 31
+#define HC_PIN_1_0 32
+#define HC_PIN_1_1 33
+#define HC_PIN_2_0 34
+#define HC_PIN_2_1 35
+#define HC_PIN_3_0 36
+#define HC_PIN_3_1 37
+#define HC_PIN_4_0 38
+#define HC_PIN_4_1 39
 #define OOB(a) ((a)>200?0:(a))//Out of bounds returns 0 if out of bounds
 #define UINT_DIV_2(a) ((a)>>1)
 #define NUM_DIST_SENS 5
-#define PWM_PIN_1 9 // Predefined PWM output pin
-#define PWM_PIN_2 10
-#define DIRECTION_PIN_1 2 // Predefined pin for controlling direction
-#define DIRECTION_PIN_2 4
+#define PWM_PIN_1 2 // Predefined PWM output pin
+#define PWM_PIN_2 3
+#define ENABLE_PIN_1 22
+#define ENABLE_PIN_2 24
+#define DIRECTION_PIN_1 23 // Predefined pin for controlling direction
+#define DIRECTION_PIN_2 25
 #define STOP_CHAR_RX 101
 #define STOP_CHAR_TX 201
 #define LIST_SIZE 3
@@ -33,10 +35,23 @@ Ultrasonic distanceSensor4(HC_PIN_4_0, HC_PIN_4_1);
 void setup()
 {
 	pinMode(PWM_PIN_1, OUTPUT);
+  	pinMode(ENABLE_PIN_1, OUTPUT);
 	pinMode(DIRECTION_PIN_1, OUTPUT);
 	pinMode(PWM_PIN_2, OUTPUT);
+  	pinMode(ENABLE_PIN_2, OUTPUT);
 	pinMode(DIRECTION_PIN_2, OUTPUT);
+  	initMotors();
 	Serial.begin(9600); // Initialize serial communication
+}
+
+void initMotors()
+{
+  	digitalWrite(ENABLE_PIN_1, LOW);
+  	digitalWrite(ENABLE_PIN_2, LOW);
+  	analogWrite(PWM_PIN_1, 0);
+  	analogWrite(PWM_PIN_2, 0);
+  	digitalWrite(ENABLE_PIN_1, HIGH);
+  	digitalWrite(ENABLE_PIN_2, HIGH);
 }
 
 void writeToMotor(bool left, int8_t inputValue)
@@ -45,31 +60,12 @@ void writeToMotor(bool left, int8_t inputValue)
 	int8_t absValue = abs(inputValue);
 
 	// Determine direction
-	if (inputValue < 0)
-	{
-		// Set direction pin HIGH for negative direction
-		if (left)
-			digitalWrite(DIRECTION_PIN_1, HIGH);
-		else
-			digitalWrite(DIRECTION_PIN_2, HIGH);
-	}
-	else
-	{
-		// Set direction pin LOW for positive direction
-		if (left)
-			digitalWrite(DIRECTION_PIN_1, LOW);
-		else
-			digitalWrite(DIRECTION_PIN_2, LOW);
-	}
+  	digitalWrite(left ? DIRECTION_PIN_1 : DIRECTION_PIN_2, inputValue < 0 ? HIGH : LOW);
 
 	// Convert absolute char value to PWM value (0 to 100 mapped to 0 to 255)
 
 	// Output PWM value
-	if (left){
-		analogWrite(PWM_PIN_1, absValue);
-	}else{
-		analogWrite(PWM_PIN_2, absValue);
-	}
+	analogWrite(left ? PWM_PIN_1 : PWM_PIN_2, absValue);
 }
 
 bool processBuffer()
