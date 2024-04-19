@@ -64,10 +64,19 @@ void writeToMotor(bool left, int8_t inputValue)
 	// Determine direction
   	digitalWrite(left ? DIRECTION_PIN_1 : DIRECTION_PIN_2, inputValue < 0 ? HIGH : LOW);
 
-	Serial.println(String(inputValue));
 
 	// Convert absolute char value to PWM value (0 to 100 mapped to 0 to 255)
+	absValue = static_cast<int8_t>(floor(absValue*TO_PWM_CONST));
 
+	Serial.println(String(absValue));
+
+	if (absValue<30){
+		digitalWrite(left ? ENABLE_PIN_1 : ENABLE_PIN_2, LOW);
+		absValue = 30;
+	} else {
+		digitalWrite(left ? ENABLE_PIN_1 : ENABLE_PIN_2, HIGH);
+	}
+	
 
 	// Output PWM value
 	analogWrite(left ? PWM_PIN_1 : PWM_PIN_2, absValue);
@@ -129,22 +138,13 @@ uint8_t * readSensors(){
 
 void loop()
 {
-	Serial.println("Hello");
-	while(Serial.available()>3)
-	{
+	while(Serial.available()>3){
 		Serial.read();
 	}
-	uint8_t incrementalPointer = 0;
-	while (incrementalPointer <= 2)
-	{
-		if (Serial.available()){
-			char incomingChar = Serial.read();
-			buffer[incrementalPointer] = int8_t(incomingChar);
-			incrementalPointer++;
-		}
-	}
-	if (incrementalPointer==3)
-	{
-		processBuffer();
-	}
+	writeToMotor(true, 50);
+	writeToMotor(false, 50);
+	delay(1000);
+	writeToMotor(true, 0);
+	writeToMotor(false, 0);
+	delay(1000);
 }
