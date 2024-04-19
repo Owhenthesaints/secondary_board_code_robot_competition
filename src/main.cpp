@@ -32,6 +32,16 @@ Ultrasonic distanceSensor2(HC_PIN_2_0, HC_PIN_2_1);
 Ultrasonic distanceSensor3(HC_PIN_3_0, HC_PIN_3_1);
 Ultrasonic distanceSensor4(HC_PIN_4_0, HC_PIN_4_1);
 
+void initMotors()
+{
+  	digitalWrite(ENABLE_PIN_1, LOW);
+  	digitalWrite(ENABLE_PIN_2, LOW);
+  	analogWrite(PWM_PIN_1, 0);
+  	analogWrite(PWM_PIN_2, 0);
+  	digitalWrite(ENABLE_PIN_1, HIGH);
+  	digitalWrite(ENABLE_PIN_2, HIGH);
+}
+
 void setup()
 {
 	pinMode(PWM_PIN_1, OUTPUT);
@@ -42,16 +52,6 @@ void setup()
 	pinMode(DIRECTION_PIN_2, OUTPUT);
   	initMotors();
 	Serial.begin(9600); // Initialize serial communication
-}
-
-void initMotors()
-{
-  	digitalWrite(ENABLE_PIN_1, LOW);
-  	digitalWrite(ENABLE_PIN_2, LOW);
-  	analogWrite(PWM_PIN_1, 0);
-  	analogWrite(PWM_PIN_2, 0);
-  	digitalWrite(ENABLE_PIN_1, HIGH);
-  	digitalWrite(ENABLE_PIN_2, HIGH);
 }
 
 void writeToMotor(bool left, int8_t inputValue)
@@ -139,9 +139,9 @@ void loop()
 	}
 	uint8_t * sensorArray = readSensors();
 	for(uint8_t i =0; i<NUM_DIST_SENS; i++){
-		Serial.print(sensorArray[i]);
+		Serial.print(char(sensorArray[i]));
 	}
-	Serial.print(STOP_CHAR_TX);
+	Serial.print(char(STOP_CHAR_TX));
 
 	// DO NOT DELETE THIS LINE
 	delete[] sensorArray;
