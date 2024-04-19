@@ -1,27 +1,29 @@
 #include <Arduino.h>
 #include <Ultrasonic.h>
-#define HC_PIN_0_0 30
-#define HC_PIN_0_1 31
-#define HC_PIN_1_0 32
-#define HC_PIN_1_1 33
-#define HC_PIN_2_0 34
-#define HC_PIN_2_1 35
-#define HC_PIN_3_0 36
-#define HC_PIN_3_1 37
-#define HC_PIN_4_0 38
-#define HC_PIN_4_1 39
+#include <math.h>
+#define HC_PIN_0_0 2
+#define HC_PIN_0_1 4
+#define HC_PIN_1_0 7
+#define HC_PIN_1_1 8
+#define HC_PIN_2_0 9
+#define HC_PIN_2_1 10
+#define HC_PIN_3_0 11
+#define HC_PIN_3_1 12
+#define HC_PIN_4_0 13
+#define HC_PIN_4_1 6
 #define OOB(a) ((a)>200?0:(a))//Out of bounds returns 0 if out of bounds
 #define UINT_DIV_2(a) ((a)>>1)
 #define NUM_DIST_SENS 5
-#define PWM_PIN_1 2 // Predefined PWM output pin
-#define PWM_PIN_2 3
-#define ENABLE_PIN_1 22
-#define ENABLE_PIN_2 24
-#define DIRECTION_PIN_1 23 // Predefined pin for controlling direction
-#define DIRECTION_PIN_2 25
-#define STOP_CHAR_RX 101
+#define PWM_PIN_1 3 // Predefined PWM output pin
+#define PWM_PIN_2 5
+#define ENABLE_PIN_1 A0 // Predefined enable pins
+#define ENABLE_PIN_2 A1
+#define DIRECTION_PIN_1 A2 // Predefined pin for controlling direction
+#define DIRECTION_PIN_2 A3
+#define STOP_CHAR_RX 101 // stop chars
 #define STOP_CHAR_TX 201
-#define LIST_SIZE 3
+#define LIST_SIZE 3 // incoming list sizes
+#define TO_PWM_CONV 2.5
 
 int8_t buffer[LIST_SIZE]; // String to store incoming data
 
@@ -62,7 +64,7 @@ void writeToMotor(bool left, int8_t inputValue)
 	// Determine direction
   	digitalWrite(left ? DIRECTION_PIN_1 : DIRECTION_PIN_2, inputValue < 0 ? HIGH : LOW);
 
-	// Convert absolute char value to PWM value (0 to 100 mapped to 0 to 255)
+	absValue *=static_cast<int8_t>(floor(inputValue * TO_PWM_CONV));
 
 	// Output PWM value
 	analogWrite(left ? PWM_PIN_1 : PWM_PIN_2, absValue);
@@ -124,6 +126,9 @@ uint8_t * readSensors(){
 
 void loop()
 {
+	while (Serial.available()>3){
+		Serial.read();
+	}
 	uint8_t incrementalPointer = 0;
 	while (incrementalPointer <= 2)
 	{
@@ -137,12 +142,4 @@ void loop()
 	{
 		processBuffer();
 	}
-	uint8_t * sensorArray = readSensors();
-	for(uint8_t i =0; i<NUM_DIST_SENS; i++){
-		Serial.print(char(sensorArray[i]));
-	}
-	Serial.print(char(STOP_CHAR_TX));
-
-	// DO NOT DELETE THIS LINE
-	delete[] sensorArray;
 }
