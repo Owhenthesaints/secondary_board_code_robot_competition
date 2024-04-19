@@ -24,6 +24,7 @@
 #define STOP_CHAR_TX 201
 #define LIST_SIZE 3 // RX list size
 #define TO_PWM_CONST 2.5 // PWM conversion constant
+#define MIN_PWM 70
 
 int8_t buffer[LIST_SIZE]; // String to store incoming data
 
@@ -34,14 +35,49 @@ Ultrasonic distanceSensor2(HC_PIN_2_0, HC_PIN_2_1);
 Ultrasonic distanceSensor3(HC_PIN_3_0, HC_PIN_3_1);
 Ultrasonic distanceSensor4(HC_PIN_4_0, HC_PIN_4_1);
 
+void writeToMotor(bool left, int8_t inputValue)
+{
+	// Calculate absolute value of input
+	uint8_t absValue = abs(inputValue);
+
+	// Determine direction
+  	digitalWrite(left ? DIRECTION_PIN_1 : DIRECTION_PIN_2, inputValue < 0 ? HIGH : LOW);
+
+
+	Serial.println(String(inputValue));
+	// Convert absolute char value to PWM value (0 to 100 mapped to 0 to 255)
+	absValue = static_cast<uint8_t>(floor(absValue*TO_PWM_CONST));
+
+	Serial.println(String(absValue));
+
+	if (absValue<MIN_PWM){
+		digitalWrite(left ? ENABLE_PIN_1 : ENABLE_PIN_2, LOW);
+		absValue = MIN_PWM;
+	} else {
+		digitalWrite(left ? ENABLE_PIN_1 : ENABLE_PIN_2, HIGH);
+	}
+	
+	Serial.print("l");
+	Serial.println(String(absValue));
+	// Output PWM value
+	analogWrite(left ? PWM_PIN_1 : PWM_PIN_2, absValue);
+}
+
+
 void initMotors()
 {
   	digitalWrite(ENABLE_PIN_1, LOW);
   	digitalWrite(ENABLE_PIN_2, LOW);
-  	analogWrite(PWM_PIN_1, 0);
-  	analogWrite(PWM_PIN_2, 0);
-  	digitalWrite(ENABLE_PIN_1, HIGH);
-  	digitalWrite(ENABLE_PIN_2, HIGH);
+	writeToMotor(true, 0);
+	writeToMotor(false, 0);
+	digitalWrite(ENABLE_PIN_1, HIGH);
+	digitalWrite(ENABLE_PIN_2, HIGH);
+	delay(500);
+	digitalWrite(ENABLE_PIN_1, LOW);
+	digitalWrite(ENABLE_PIN_2, LOW);
+
+
+
 }
 
 void setup()
@@ -56,31 +92,6 @@ void setup()
 	Serial.begin(9600); // Initialize serial communication
 }
 
-void writeToMotor(bool left, int8_t inputValue)
-{
-	// Calculate absolute value of input
-	int8_t absValue = abs(inputValue);
-
-	// Determine direction
-  	digitalWrite(left ? DIRECTION_PIN_1 : DIRECTION_PIN_2, inputValue < 0 ? HIGH : LOW);
-
-
-	// Convert absolute char value to PWM value (0 to 100 mapped to 0 to 255)
-	absValue = static_cast<int8_t>(floor(absValue*TO_PWM_CONST));
-
-	Serial.println(String(absValue));
-
-	if (absValue<30){
-		digitalWrite(left ? ENABLE_PIN_1 : ENABLE_PIN_2, LOW);
-		absValue = 30;
-	} else {
-		digitalWrite(left ? ENABLE_PIN_1 : ENABLE_PIN_2, HIGH);
-	}
-	
-
-	// Output PWM value
-	analogWrite(left ? PWM_PIN_1 : PWM_PIN_2, absValue);
-}
 
 bool processBuffer()
 {
@@ -101,14 +112,17 @@ bool processBuffer()
 		switch (index)
 		{
 		case 0:
+		 	Serial.println("case 0");
 			writeToMotor(true, buffer[1]);
 			writeToMotor(false, buffer[2]);
 			break;
 		case 1:
+			Serial.println("case 1");
 			writeToMotor(false, buffer[0]);
 			writeToMotor(true, buffer[2]);
 			break;
 		case 2:
+			Serial.println("case 2");
 			writeToMotor(true, buffer[0]);
 			writeToMotor(false, buffer[1]);
 			break;
@@ -141,10 +155,17 @@ void loop()
 	while(Serial.available()>3){
 		Serial.read();
 	}
-	writeToMotor(true, 50);
-	writeToMotor(false, 50);
-	delay(1000);
-	writeToMotor(true, 0);
-	writeToMotor(false, 0);
-	delay(1000);
+	uint8_t incrementalPointer = 0;
+	while(incrementalPointer <= 2)
+	{
+		if(Serial.available()){
+			Serial.println("in available");
+			char incomingChar = Serial.read();
+			buffer[incrementalPointer] = int8_t(incomingChar);
+			incrementalPointer++;
+		}
+	}
+	if (incrementalPointer == 3){
+		processBuffer();
+	}
 }
