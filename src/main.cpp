@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <Ultrasonic.h>
+#include <math.h>
 #define HC_PIN_0_0 30
 #define HC_PIN_0_1 31
 #define HC_PIN_1_0 32
@@ -19,9 +20,10 @@
 #define ENABLE_PIN_2 24
 #define DIRECTION_PIN_1 23 // Predefined pin for controlling direction
 #define DIRECTION_PIN_2 25
-#define STOP_CHAR_RX 101
+#define STOP_CHAR_RX 101 // Stop chars
 #define STOP_CHAR_TX 201
-#define LIST_SIZE 3
+#define LIST_SIZE 3 // RX list size
+#define TO_PWM_CONST 2.5 // PWM conversion constant
 
 int8_t buffer[LIST_SIZE]; // String to store incoming data
 
@@ -62,7 +64,10 @@ void writeToMotor(bool left, int8_t inputValue)
 	// Determine direction
   	digitalWrite(left ? DIRECTION_PIN_1 : DIRECTION_PIN_2, inputValue < 0 ? HIGH : LOW);
 
+	Serial.println(String(inputValue));
+
 	// Convert absolute char value to PWM value (0 to 100 mapped to 0 to 255)
+
 
 	// Output PWM value
 	analogWrite(left ? PWM_PIN_1 : PWM_PIN_2, absValue);
@@ -124,6 +129,11 @@ uint8_t * readSensors(){
 
 void loop()
 {
+	Serial.println("Hello");
+	while(Serial.available()>3)
+	{
+		Serial.read();
+	}
 	uint8_t incrementalPointer = 0;
 	while (incrementalPointer <= 2)
 	{
@@ -137,12 +147,4 @@ void loop()
 	{
 		processBuffer();
 	}
-	uint8_t * sensorArray = readSensors();
-	for(uint8_t i =0; i<NUM_DIST_SENS; i++){
-		Serial.print(char(sensorArray[i]));
-	}
-	Serial.print(char(STOP_CHAR_TX));
-
-	// DO NOT DELETE THIS LINE
-	delete[] sensorArray;
 }
