@@ -44,11 +44,15 @@ void writeToMotor(bool left, int8_t inputValue)
   	digitalWrite(left ? DIRECTION_PIN_1 : DIRECTION_PIN_2, inputValue < 0 ? HIGH : LOW);
 
 
+	#ifdef DEBUG
 	Serial.println(String(inputValue));
+	#endif
 	// Convert absolute char value to PWM value (0 to 100 mapped to 0 to 255)
 	absValue = static_cast<uint8_t>(floor(absValue*TO_PWM_CONST));
 
+	#ifdef DEBUG
 	Serial.println(String(absValue));
+	#endif
 
 	if (absValue<MIN_PWM){
 		digitalWrite(left ? ENABLE_PIN_1 : ENABLE_PIN_2, LOW);
@@ -57,8 +61,10 @@ void writeToMotor(bool left, int8_t inputValue)
 		digitalWrite(left ? ENABLE_PIN_1 : ENABLE_PIN_2, HIGH);
 	}
 	
+	#ifdef DEBUG
 	Serial.print("l");
 	Serial.println(String(absValue));
+	#endif
 	// Output PWM value
 	analogWrite(left ? PWM_PIN_1 : PWM_PIN_2, absValue);
 }
@@ -112,22 +118,30 @@ bool processBuffer()
 		switch (index)
 		{
 		case 0:
+			#ifdef DEBUG
 		 	Serial.println("case 0");
+			#endif
 			writeToMotor(true, buffer[1]);
 			writeToMotor(false, buffer[2]);
 			break;
 		case 1:
+			#ifdef DEBUG
 			Serial.println("case 1");
+			#endif
 			writeToMotor(false, buffer[0]);
 			writeToMotor(true, buffer[2]);
 			break;
 		case 2:
+			#ifdef DEBUG
 			Serial.println("case 2");
+			#endif
 			writeToMotor(true, buffer[0]);
 			writeToMotor(false, buffer[1]);
 			break;
 		default:
+			#ifdef DEBUG
 			Serial.println("inv");
+			#endif
 			break;
 		}
 	}
@@ -159,7 +173,9 @@ void loop()
 	while(incrementalPointer <= 2)
 	{
 		if(Serial.available()){
+			#ifdef DEBUG
 			Serial.println("in available");
+			#endif
 			char incomingChar = Serial.read();
 			buffer[incrementalPointer] = int8_t(incomingChar);
 			incrementalPointer++;
