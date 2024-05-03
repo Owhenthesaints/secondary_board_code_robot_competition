@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include <Ultrasonic.h>
 #include <math.h>
 #define HC_PIN_0_0 30
 #define HC_PIN_0_1 31
@@ -28,12 +27,6 @@
 
 int8_t buffer[LIST_SIZE]; // String to store incoming data
 
-
-Ultrasonic distanceSensor0(HC_PIN_0_0, HC_PIN_0_1); 
-Ultrasonic distanceSensor1(HC_PIN_1_0, HC_PIN_1_1);
-Ultrasonic distanceSensor2(HC_PIN_2_0, HC_PIN_2_1);
-Ultrasonic distanceSensor3(HC_PIN_3_0, HC_PIN_3_1);
-Ultrasonic distanceSensor4(HC_PIN_4_0, HC_PIN_4_1);
 
 void writeToMotor(bool left, int8_t inputValue)
 {
@@ -81,9 +74,6 @@ void initMotors()
 	delay(500);
 	digitalWrite(ENABLE_PIN_1, LOW);
 	digitalWrite(ENABLE_PIN_2, LOW);
-
-
-
 }
 
 void setup()
@@ -94,6 +84,16 @@ void setup()
 	pinMode(PWM_PIN_2, OUTPUT);
   	pinMode(ENABLE_PIN_2, OUTPUT);
 	pinMode(DIRECTION_PIN_2, OUTPUT);
+	pinMode(HC_PIN_0_0, OUTPUT);
+	pinMode(HC_PIN_0_1, INPUT);
+	pinMode(HC_PIN_1_0, OUTPUT);
+	pinMode(HC_PIN_1_1, INPUT);
+	pinMode(HC_PIN_2_0, OUTPUT);
+	pinMode(HC_PIN_2_1, INPUT);
+	pinMode(HC_PIN_3_0, OUTPUT);
+	pinMode(HC_PIN_3_1, INPUT);
+	pinMode(HC_PIN_4_0, OUTPUT);
+	pinMode(HC_PIN_4_1, INPUT);
   	initMotors();
 	Serial.begin(9600); // Initialize serial communication
 }
@@ -148,25 +148,33 @@ bool processBuffer()
 	return found;
 }
 
-uint8_t * readSensors(){
-	uint8_t *sensorArray = new uint8_t[NUM_DIST_SENS];
-	uint8_t sensorValue0 = UINT_DIV_2(distanceSensor0.read(CM)); // divides the number by 2
-	uint8_t sensorValue1 = UINT_DIV_2(distanceSensor1.read(CM));
-	uint8_t sensorValue2 = UINT_DIV_2(distanceSensor2.read(CM));
-	uint8_t sensorValue3 = UINT_DIV_2(distanceSensor3.read(CM));
-	uint8_t sensorValue4 = UINT_DIV_2(distanceSensor4.read(CM));
-	sensorArray[0] = OOB(sensorValue0); //cuts off the number at 200
-	sensorArray[1] = OOB(sensorValue1);
-	sensorArray[2] = OOB(sensorValue2);
-	sensorArray[3] = OOB(sensorValue3);
-	sensorArray[4] = OOB(sensorValue4);
-	return sensorArray;
+long readDistance(int triggerPin, int echoPin) {
+  digitalWrite(triggerPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(triggerPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(triggerPin, LOW);
+
+  long duration = pulseIn(echoPin, HIGH);
+  long distance = duration * 0.034 / 2; // Speed of sound is 34 cm/ms
+
+  return distance;
+}
+
+void printSensors(){
+  Serial.print(readDistance(HC_PIN_0_0, HC_PIN_0_1));
+  Serial.print(readDistance(HC_PIN_1_0, HC_PIN_1_1));
+  Serial.print(readDistance(HC_PIN_2_0, HC_PIN_2_1));
+  Serial.print(readDistance(HC_PIN_3_0, HC_PIN_3_1));
+  Serial.print(readDistance(HC_PIN_4_0, HC_PIN_4_1));
+  Serial.print(STOP_CHAR_TX);
 }
 
 
 void loop()
 {
-	while(Serial.available()>3){
+	printSensors();
+	/*while(Serial.available()>3){
 		Serial.read();
 	}
 	uint8_t incrementalPointer = 0;
@@ -183,5 +191,5 @@ void loop()
 	}
 	if (incrementalPointer == 3){
 		processBuffer();
-	}
+	}*/
 }
