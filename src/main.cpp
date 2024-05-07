@@ -20,7 +20,7 @@
 #define DIRECTION_PIN_1 23 // Predefined pin for controlling direction
 #define DIRECTION_PIN_2 25
 #define STOP_CHAR_RX 101 // Stop chars
-#define STOP_CHAR_TX 201
+#define STOP_CHAR_TX 101
 #define LIST_SIZE 3 // RX list size
 #define TO_PWM_CONST 2.5 // PWM conversion constant
 #define MIN_PWM 70
@@ -148,7 +148,7 @@ bool processBuffer()
 	return found;
 }
 
-long readDistance(int triggerPin, int echoPin) {
+unsigned char readDistance(int triggerPin, int echoPin) {
   digitalWrite(triggerPin, LOW);
   delayMicroseconds(2);
   digitalWrite(triggerPin, HIGH);
@@ -158,16 +158,16 @@ long readDistance(int triggerPin, int echoPin) {
   long duration = pulseIn(echoPin, HIGH);
   long distance = duration * 0.034 / 2; // Speed of sound is 34 cm/ms
 
-  return distance;
+  return static_cast<unsigned char>(distance);
 }
 
 void printSensors(){
-  Serial.print(readDistance(HC_PIN_0_0, HC_PIN_0_1));
-  Serial.print(readDistance(HC_PIN_1_0, HC_PIN_1_1));
-  Serial.print(readDistance(HC_PIN_2_0, HC_PIN_2_1));
-  Serial.print(readDistance(HC_PIN_3_0, HC_PIN_3_1));
-  Serial.print(readDistance(HC_PIN_4_0, HC_PIN_4_1));
-  Serial.print(STOP_CHAR_TX);
+  Serial.print(char(readDistance(HC_PIN_0_0, HC_PIN_0_1)));
+  Serial.print(char(readDistance(HC_PIN_1_0, HC_PIN_1_1)));
+  Serial.print(char(readDistance(HC_PIN_2_0, HC_PIN_2_1)));
+  Serial.print(char(readDistance(HC_PIN_3_0, HC_PIN_3_1)));
+  Serial.print(char(readDistance(HC_PIN_4_0, HC_PIN_4_1)));
+  Serial.print(char(STOP_CHAR_TX));
 }
 
 
