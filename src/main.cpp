@@ -28,6 +28,7 @@
 int8_t buffer[LIST_SIZE]; // String to store incoming data
 
 
+
 void writeToMotor(bool left, int8_t inputValue)
 {
 	// Calculate absolute value of input
@@ -76,14 +77,16 @@ void initMotors()
 	digitalWrite(ENABLE_PIN_2, LOW);
 }
 
-void setup()
-{
+void motorSetup() {
 	pinMode(PWM_PIN_1, OUTPUT);
   	pinMode(ENABLE_PIN_1, OUTPUT);
 	pinMode(DIRECTION_PIN_1, OUTPUT);
 	pinMode(PWM_PIN_2, OUTPUT);
   	pinMode(ENABLE_PIN_2, OUTPUT);
 	pinMode(DIRECTION_PIN_2, OUTPUT);
+}
+
+void distanceSetup() {
 	pinMode(HC_PIN_0_0, OUTPUT);
 	pinMode(HC_PIN_0_1, INPUT);
 	pinMode(HC_PIN_1_0, OUTPUT);
@@ -94,6 +97,13 @@ void setup()
 	pinMode(HC_PIN_3_1, INPUT);
 	pinMode(HC_PIN_4_0, OUTPUT);
 	pinMode(HC_PIN_4_1, INPUT);
+}
+
+
+void setup()
+{
+	motorSetup();
+	distanceSetup();
   	initMotors();
 	Serial.begin(9600); // Initialize serial communication
 }
@@ -174,7 +184,7 @@ void printSensors(){
 void loop()
 {
 	printSensors();
-	/*while(Serial.available()>3){
+	while(Serial.available()>3){
 		Serial.read();
 	}
 	uint8_t incrementalPointer = 0;
@@ -191,5 +201,5 @@ void loop()
 	}
 	if (incrementalPointer == 3){
 		processBuffer();
-	}*/
+	}
 }
