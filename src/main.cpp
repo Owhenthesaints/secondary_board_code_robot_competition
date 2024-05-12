@@ -25,6 +25,7 @@
 #define LIST_SIZE 3 // RX list size
 #define TO_PWM_CONST 2.5 // PWM conversion constant
 #define MIN_PWM 70
+#define MS_TIMEOUT 3000 // 3s without rx and go back to zero
 
 int8_t buffer[LIST_SIZE]; // String to store incoming data
 
@@ -35,6 +36,12 @@ Ultrasonic distanceSensor2(HC_PIN_2_0, HC_PIN_2_1);
 Ultrasonic distanceSensor3(HC_PIN_3_0, HC_PIN_3_1);
 Ultrasonic distanceSensor4(HC_PIN_4_0, HC_PIN_4_1);
 
+/**
+ * @brief a function to write a value between -100 and 100 to each motor
+ * @details the function cuts off under a certain value
+ * @param left bool indicating left motor
+ * @param inputValue int8_t with value between -100 and 100
+*/
 void writeToMotor(bool left, int8_t inputValue)
 {
 	// Calculate absolute value of input
@@ -70,6 +77,9 @@ void writeToMotor(bool left, int8_t inputValue)
 }
 
 
+/**
+ * @brief function to setup the motors and get the ECS to mork
+*/
 void initMotors()
 {
   	digitalWrite(ENABLE_PIN_1, LOW);
@@ -98,13 +108,24 @@ void setup()
 	Serial.begin(9600); // Initialize serial communication
 }
 
+void stopMotors()
+{
+	writeToMotor(false, 0);
+	writeToMotor(true, 0);
+}
 
+
+/**
+ * @brief Processes the buffer tries to find position of the stop char and write two values to motor
+ * @returns bool indicating if the stop char has been found
+*/
 bool processBuffer()
 {
 	// Extract last two characters separated by STOP_CHAR
 	// Extract last two characters
 	uint8_t index;
 	bool found = false;
+	// find stop char
 	for (uint8_t i =0; i<LIST_SIZE; i++){
 		if (buffer[i]==STOP_CHAR_RX){
 			index = i;
@@ -115,6 +136,7 @@ bool processBuffer()
 
 	if (found)
 	{
+		// handling the different cases of position of stop_char
 		switch (index)
 		{
 		case 0:
@@ -166,13 +188,23 @@ uint8_t * readSensors(){
 
 void loop()
 {
+	// setup intervalTime
+	static unsigned long intervalTime;
+	intervalTime = millis();
 	while(Serial.available()>3){
 		Serial.read();
+
 	}
+
+	
+	// using an int as an itterator for simplicity
 	uint8_t incrementalPointer = 0;
 	while(incrementalPointer <= 2)
 	{
-		if(Serial.available()){
+		
+		// if serial is available store the char in the buffer
+		if(Serial.available())
+		{
 			#ifdef DEBUG
 			Serial.println("in available");
 			#endif
@@ -180,8 +212,17 @@ void loop()
 			buffer[incrementalPointer] = int8_t(incomingChar);
 			incrementalPointer++;
 		}
+
+		// if we timeout (the cable is disconnected) stop the motors
+		if (millis() - intervalTime > MS_TIMEOUT)
+		{
+			stopMotors();
+		}
 	}
-	if (incrementalPointer == 3){
+
+	// if the pointer is 3 i.e. we did not timeout
+	if (incrementalPointer == 3)
+	{
 		processBuffer();
 	}
 }
