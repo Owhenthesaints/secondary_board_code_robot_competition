@@ -217,6 +217,7 @@ void loop()
 		if (millis() - intervalTime > MS_TIMEOUT)
 		{
 			stopMotors();
+			break;
 		}
 	}
 
