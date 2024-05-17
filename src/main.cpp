@@ -68,6 +68,12 @@ void writeToMotor(bool left, int8_t inputValue)
 	analogWrite(left ? PWM_PIN_1 : PWM_PIN_2, absValue);
 }
 
+inline void stopMotors()
+{
+	writeToMotor(false, 0);
+	writeToMotor(true, 0);
+}
+
 
 void initMotors()
 {
@@ -201,6 +207,7 @@ void loop()
 	{
 		if (TimeExceeded(intervalTime))
 		{
+			stopMotors();
 			break;
 		}
 		else if (Serial.available())
