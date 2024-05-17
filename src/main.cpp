@@ -24,10 +24,15 @@
 #define LIST_SIZE 3 // RX list size
 #define TO_PWM_CONST 2.5 // PWM conversion constant
 #define MIN_PWM 70
+#define NUM_DIST_SENSORS 5
+#define STOP_CHAR 101
+#define MAX_TIME 1000
 
 int8_t buffer[LIST_SIZE]; // String to store incoming data
 
-
+inline bool TimeExceeded(long int & intervalTime){
+	return static_cast<long int>(intervalTime + MAX_TIME - millis()) < 0;
+}
 
 void writeToMotor(bool left, int8_t inputValue)
 {
@@ -183,23 +188,34 @@ void printSensors(){
 
 void loop()
 {
+	static long int intervalTime(millis());
+	static bool firstTime(true);
 	printSensors();
-	while(Serial.available()>3){
+	while (Serial.available() > 3)
+	{
 		Serial.read();
 	}
-	uint8_t incrementalPointer = 0;
-	while(incrementalPointer <= 2)
+	intervalTime = millis();
+	uint8_t incremental_pointer(0);
+	while (incremental_pointer <= 2)
 	{
-		if(Serial.available()){
-			#ifdef DEBUG
-			Serial.println("in available");
-			#endif
-			char incomingChar = Serial.read();
-			buffer[incrementalPointer] = int8_t(incomingChar);
-			incrementalPointer++;
+		if (TimeExceeded(intervalTime))
+		{
+			break;
+		}
+		else if (Serial.available())
+		{
+			char incommingChar = Serial.read();
+			buffer[incremental_pointer] = int8_t(incommingChar);
+			incremental_pointer++;
+			firstTime = false;
+		}
+		else if (firstTime)
+		{
+			break;
 		}
 	}
-	if (incrementalPointer == 3){
+	if(incremental_pointer == 3){
 		processBuffer();
 	}
 }
