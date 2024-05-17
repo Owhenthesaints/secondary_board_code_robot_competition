@@ -18,6 +18,7 @@ void setup() {
 void loop()
 {
 	static long int intervalTime(millis());
+	static bool firstTime(true);
 	while (Serial.available() > 3)
 	{
 		Serial.read();
@@ -26,7 +27,8 @@ void loop()
 	uint8_t incremental_pointer(0);
 	while (incremental_pointer <= 2)
 	{
-		if (TimeExceeded(intervalTime)){
+		if (TimeExceeded(intervalTime))
+		{
 			break;
 		}
 		else if (Serial.available())
@@ -34,6 +36,11 @@ void loop()
 			char incommingChar = Serial.read();
 			buffer[incremental_pointer] = int8_t(incommingChar);
 			incremental_pointer++;
+			firstTime = false;
+		}
+		else if (firstTime)
+		{
+			break;
 		}
 	}
 
