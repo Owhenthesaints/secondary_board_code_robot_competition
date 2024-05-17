@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include <Ultrasonic.h>
 #include <math.h>
 #define HC_PIN_0_0 30
 #define HC_PIN_0_1 31
@@ -21,27 +20,20 @@
 #define DIRECTION_PIN_1 23 // Predefined pin for controlling direction
 #define DIRECTION_PIN_2 25
 #define STOP_CHAR_RX 101 // Stop chars
-#define STOP_CHAR_TX 201
+#define STOP_CHAR_TX 101
 #define LIST_SIZE 3 // RX list size
 #define TO_PWM_CONST 2.5 // PWM conversion constant
 #define MIN_PWM 70
-#define MS_TIMEOUT 3000 // 3s without rx and go back to zero
+#define NUM_DIST_SENSORS 5
+#define STOP_CHAR 101
+#define MAX_TIME 1000
 
 int8_t buffer[LIST_SIZE]; // String to store incoming data
 
+inline bool TimeExceeded(long int & intervalTime){
+	return static_cast<long int>(intervalTime + MAX_TIME - millis()) < 0;
+}
 
-Ultrasonic distanceSensor0(HC_PIN_0_0, HC_PIN_0_1); 
-Ultrasonic distanceSensor1(HC_PIN_1_0, HC_PIN_1_1);
-Ultrasonic distanceSensor2(HC_PIN_2_0, HC_PIN_2_1);
-Ultrasonic distanceSensor3(HC_PIN_3_0, HC_PIN_3_1);
-Ultrasonic distanceSensor4(HC_PIN_4_0, HC_PIN_4_1);
-
-/**
- * @brief a function to write a value between -100 and 100 to each motor
- * @details the function cuts off under a certain value
- * @param left bool indicating left motor
- * @param inputValue int8_t with value between -100 and 100
-*/
 void writeToMotor(bool left, int8_t inputValue)
 {
 	// Calculate absolute value of input
@@ -76,10 +68,13 @@ void writeToMotor(bool left, int8_t inputValue)
 	analogWrite(left ? PWM_PIN_1 : PWM_PIN_2, absValue);
 }
 
+inline void stopMotors()
+{
+	writeToMotor(false, 0);
+	writeToMotor(true, 0);
+}
 
-/**
- * @brief function to setup the motors and get the ECS to mork
-*/
+
 void initMotors()
 {
   	digitalWrite(ENABLE_PIN_1, LOW);
@@ -91,19 +86,35 @@ void initMotors()
 	delay(500);
 	digitalWrite(ENABLE_PIN_1, LOW);
 	digitalWrite(ENABLE_PIN_2, LOW);
-
-
-
 }
 
-void setup()
-{
+void motorSetup() {
 	pinMode(PWM_PIN_1, OUTPUT);
   	pinMode(ENABLE_PIN_1, OUTPUT);
 	pinMode(DIRECTION_PIN_1, OUTPUT);
 	pinMode(PWM_PIN_2, OUTPUT);
   	pinMode(ENABLE_PIN_2, OUTPUT);
 	pinMode(DIRECTION_PIN_2, OUTPUT);
+}
+
+void distanceSetup() {
+	pinMode(HC_PIN_0_0, OUTPUT);
+	pinMode(HC_PIN_0_1, INPUT);
+	pinMode(HC_PIN_1_0, OUTPUT);
+	pinMode(HC_PIN_1_1, INPUT);
+	pinMode(HC_PIN_2_0, OUTPUT);
+	pinMode(HC_PIN_2_1, INPUT);
+	pinMode(HC_PIN_3_0, OUTPUT);
+	pinMode(HC_PIN_3_1, INPUT);
+	pinMode(HC_PIN_4_0, OUTPUT);
+	pinMode(HC_PIN_4_1, INPUT);
+}
+
+
+void setup()
+{
+	motorSetup();
+	distanceSetup();
   	initMotors();
 	Serial.begin(9600); // Initialize serial communication
 }
@@ -170,60 +181,61 @@ bool processBuffer()
 	return found;
 }
 
-uint8_t * readSensors(){
-	uint8_t *sensorArray = new uint8_t[NUM_DIST_SENS];
-	uint8_t sensorValue0 = UINT_DIV_2(distanceSensor0.read(CM)); // divides the number by 2
-	uint8_t sensorValue1 = UINT_DIV_2(distanceSensor1.read(CM));
-	uint8_t sensorValue2 = UINT_DIV_2(distanceSensor2.read(CM));
-	uint8_t sensorValue3 = UINT_DIV_2(distanceSensor3.read(CM));
-	uint8_t sensorValue4 = UINT_DIV_2(distanceSensor4.read(CM));
-	sensorArray[0] = OOB(sensorValue0); //cuts off the number at 200
-	sensorArray[1] = OOB(sensorValue1);
-	sensorArray[2] = OOB(sensorValue2);
-	sensorArray[3] = OOB(sensorValue3);
-	sensorArray[4] = OOB(sensorValue4);
-	return sensorArray;
+unsigned char readDistance(int triggerPin, int echoPin) {
+  digitalWrite(triggerPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(triggerPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(triggerPin, LOW);
+
+  long duration = pulseIn(echoPin, HIGH);
+  long distance = duration * 0.034 / 2; // Speed of sound is 34 cm/ms
+
+  return static_cast<unsigned char>(distance);
+}
+
+void printSensors(){
+  Serial.print(char(readDistance(HC_PIN_0_0, HC_PIN_0_1)));
+  Serial.print(char(readDistance(HC_PIN_1_0, HC_PIN_1_1)));
+  Serial.print(char(readDistance(HC_PIN_2_0, HC_PIN_2_1)));
+  Serial.print(char(readDistance(HC_PIN_3_0, HC_PIN_3_1)));
+  Serial.print(char(readDistance(HC_PIN_4_0, HC_PIN_4_1)));
+  Serial.print(char(STOP_CHAR_TX));
 }
 
 
 void loop()
 {
-	// setup intervalTime
-	static unsigned long intervalTime;
-	intervalTime = millis();
-	while(Serial.available()>3){
+	static long int intervalTime(millis());
+	static bool firstTime(true);
+	printSensors();
+	while (Serial.available() > 3)
+	{
 		Serial.read();
 
 	}
-
-	
-	// using an int as an itterator for simplicity
-	uint8_t incrementalPointer = 0;
-	while(incrementalPointer <= 2)
+	intervalTime = millis();
+	uint8_t incremental_pointer(0);
+	while (incremental_pointer <= 2)
 	{
-		
-		// if serial is available store the char in the buffer
-		if(Serial.available())
-		{
-			#ifdef DEBUG
-			Serial.println("in available");
-			#endif
-			char incomingChar = Serial.read();
-			buffer[incrementalPointer] = int8_t(incomingChar);
-			incrementalPointer++;
-		}
-
-		// if we timeout (the cable is disconnected) stop the motors
-		if (millis() - intervalTime > MS_TIMEOUT)
+		if (TimeExceeded(intervalTime))
 		{
 			stopMotors();
 			break;
 		}
+		else if (Serial.available())
+		{
+			char incommingChar = Serial.read();
+			buffer[incremental_pointer] = int8_t(incommingChar);
+			incremental_pointer++;
+			firstTime = false;
+		}
+		else if (firstTime)
+		{
+			break;
+		}
 	}
-
-	// if the pointer is 3 i.e. we did not timeout
-	if (incrementalPointer == 3)
-	{
+	if(incremental_pointer == 3){
 		processBuffer();
 	}
 }
