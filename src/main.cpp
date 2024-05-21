@@ -1,8 +1,13 @@
 #define NUM_SENSORS 5 // Utilisation de 4 capteurs à ultrasons pour éviter les broches 20 et 21
 #include <Arduino.h>
+#define MAX(a, b) ((a) > (b) ? (a) : (b))
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#define MAX_VAL 254
+#define STOP_CHAR_DIST 255
 
 const int triggerPins[NUM_SENSORS] = {30, 32, 34, 36, 38}; // Broches pour les triggers
 const int echoPins[NUM_SENSORS] = {2, 3, 18, 19, 20};	  // Broches pour les echos, compatibles avec les interruptions
+uint8_t distances[NUM_SENSORS] = {0, 0, 0, 0, 0};
 
 volatile unsigned long startTimes[NUM_SENSORS];
 volatile unsigned long echoTimes[NUM_SENSORS];
@@ -43,6 +48,45 @@ void ISREcho5() {
 	ISREcho(4);
 }
 
+void getAndSendDistances() {
+	for (int i = 0; i < NUM_SENSORS; i++)
+	{
+		if (!newMeasurementAvailable[i])
+		{
+			digitalWrite(triggerPins[i], LOW);
+			delayMicroseconds(2);
+			digitalWrite(triggerPins[i], HIGH);
+			startTimes[i] = micros();
+			delayMicroseconds(10);
+			digitalWrite(triggerPins[i], LOW);
+
+			// Ajouter un délai pour éviter les interférences entre les capteurs
+			delay(5);
+		}
+	}
+
+	for (uint8_t i(0); i < NUM_SENSORS; i++)
+	{
+		if (newMeasurementAvailable[i])
+		{
+			noInterrupts(); // Désactiver les interruptions pour éviter des lectures incorrectes
+			unsigned long duration = echoTimes[i] - startTimes[i];
+			interrupts(); // Réactiver les interruptions
+
+			float distance = duration * 0.034 / 2;
+			distances[i] = static_cast<uint8_t>(MAX(MIN(distance, MAX_VAL), 0));
+			newMeasurementAvailable[i] = false;
+		}
+	}
+
+	delay(10);
+	for (uint8_t i(0); i<NUM_SENSORS; i++){
+		Serial.print(char(distances[i]));
+		Serial.print(char(STOP_CHAR_DIST));
+	}
+
+}
+
 void setup()
 {
 	Serial.begin(9600);
@@ -63,38 +107,8 @@ void setup()
 
 void loop()
 {
-	for (int i = 0; i < NUM_SENSORS; i++)
-	{
-		if (!newMeasurementAvailable[i])
-		{
-			digitalWrite(triggerPins[i], LOW);
-			delayMicroseconds(2);
-			digitalWrite(triggerPins[i], HIGH);
-			startTimes[i] = micros();
-			delayMicroseconds(10);
-			digitalWrite(triggerPins[i], LOW);
-
-			// Ajouter un délai pour éviter les interférences entre les capteurs
-			delay(5);
-		}
+	while(Serial.available()){
+		Serial.read();
 	}
-
-	uint8_t i = 4;
-
-	if (newMeasurementAvailable[i])
-	{
-		noInterrupts(); // Désactiver les interruptions pour éviter des lectures incorrectes
-		unsigned long duration = echoTimes[i] - startTimes[i];
-		interrupts(); // Réactiver les interruptions
-
-		float distance = duration * 0.034 / 2;
-		Serial.print("Sensor ");
-		Serial.print(i);
-		Serial.print(": ");
-		Serial.print(distance);
-		Serial.println(" cm");
-		newMeasurementAvailable[i] = false;
-	}
-
-	delay(100);
+	getAndSendDistances();
 }
