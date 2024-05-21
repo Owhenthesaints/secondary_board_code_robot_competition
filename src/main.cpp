@@ -4,8 +4,8 @@
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 #define MAX_VAL 100
 #define STOP_CHAR_DIST 101
-#define PWM_PIN_1 2 // Predefined PWM output pin
-#define PWM_PIN_2 3
+#define PWM_PIN_1 4 // Predefined PWM output pin
+#define PWM_PIN_2 5
 #define ENABLE_PIN_1 22
 #define ENABLE_PIN_2 24
 #define DIRECTION_PIN_1 23 // Predefined pin for controlling direction
@@ -259,21 +259,23 @@ void loop()
 	uint8_t incremental_pointer(0);
 	while (incremental_pointer <= 2)
 	{
-		if (TimeExceeded(intervalTime))
-		{
-			stopMotors();
-			break;
-		}
-		else if (Serial.available())
+		//if (TimeExceeded(intervalTime))
+		//{
+		//	stopMotors();
+		//	break;
+		//}
+		//else if (Serial.available())
+		//{
+		//	char incommingChar = Serial.read();
+		//	buffer[incremental_pointer] = int8_t(incommingChar);
+		//	incremental_pointer++;
+		//	firstTime = false;
+		//}
+		if (Serial.available())
 		{
 			char incommingChar = Serial.read();
 			buffer[incremental_pointer] = int8_t(incommingChar);
-			incremental_pointer++;
-			firstTime = false;
-		}
-		else if (firstTime)
-		{
-			break;
+			incremental_pointer ++;
 		}
 	}
 	if(incremental_pointer == 3){
