@@ -2,8 +2,8 @@
 #include <Arduino.h>
 #define MAX(a, b) ((a) > (b) ? (a) : (b))
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
-#define MAX_VAL 254
-#define STOP_CHAR_DIST 255
+#define MAX_VAL 100
+#define STOP_CHAR_DIST 101
 
 const int triggerPins[NUM_SENSORS] = {30, 32, 34, 36, 38}; // Broches pour les triggers
 const int echoPins[NUM_SENSORS] = {2, 3, 18, 19, 20};	  // Broches pour les echos, compatibles avec les interruptions
@@ -82,8 +82,8 @@ void getAndSendDistances() {
 	delay(10);
 	for (uint8_t i(0); i<NUM_SENSORS; i++){
 		Serial.print(char(distances[i]));
-		Serial.print(char(STOP_CHAR_DIST));
 	}
+	Serial.print(char(STOP_CHAR_DIST));
 
 }
 
