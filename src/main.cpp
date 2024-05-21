@@ -1,11 +1,11 @@
+const int numSensors = 4; // Utilisation de 4 capteurs à ultrasons pour éviter les broches 20 et 21
 #include <Arduino.h>
-const int numSensors = 5;
 
-const int triggerPins[numSensors] = {30, 32, 34, 36, 38}; // Broches pour les triggers, modifiables
-const int echoPins[numSensors] = {2, 3, 18, 19, 20}; // Broches pour les echos, doivent être compatibles avec les interruptions
+const int triggerPins[numSensors] = {30, 32, 34, 36}; // Broches pour les triggers
+const int echoPins[numSensors] = {2, 3, 18, 19}; // Broches pour les echos, compatibles avec les interruptions
 
-volatile long startTimes[numSensors];
-volatile long echoTimes[numSensors];
+volatile unsigned long startTimes[numSensors];
+volatile unsigned long echoTimes[numSensors];
 volatile bool newMeasurementAvailable[numSensors];
 
 void setup() {
@@ -25,19 +25,27 @@ void loop() {
       digitalWrite(triggerPins[i], LOW);
       delayMicroseconds(2);
       digitalWrite(triggerPins[i], HIGH);
+      startTimes[i] = micros();
       delayMicroseconds(10);
       digitalWrite(triggerPins[i], LOW);
+
+      // Ajouter un délai pour éviter les interférences entre les capteurs
+      delay(50); // Ajuster cette valeur si nécessaire
     }
   }
 
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < numSensors; i++) {
     if (newMeasurementAvailable[i]) {
-      long duration = echoTimes[i] - startTimes[i];
+      noInterrupts(); // Désactiver les interruptions pour éviter des lectures incorrectes
+      unsigned long duration = echoTimes[i] - startTimes[i];
+      interrupts(); // Réactiver les interruptions
+
       float distance = duration * 0.034 / 2;
       Serial.print("Sensor ");
       Serial.print(i);
       Serial.print(": ");
-      Serial.println(distance);
+      Serial.print(distance);
+      Serial.println(" cm");
       newMeasurementAvailable[i] = false;
     }
   }
@@ -55,4 +63,3 @@ void ISR_echo() {
     }
   }
 }
-
