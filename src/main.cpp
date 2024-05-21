@@ -259,23 +259,19 @@ void loop()
 	uint8_t incremental_pointer(0);
 	while (incremental_pointer <= 2)
 	{
-		//if (TimeExceeded(intervalTime))
-		//{
-		//	stopMotors();
-		//	break;
-		//}
-		//else if (Serial.available())
-		//{
-		//	char incommingChar = Serial.read();
-		//	buffer[incremental_pointer] = int8_t(incommingChar);
-		//	incremental_pointer++;
-		//	firstTime = false;
-		//}
-		if (Serial.available())
+		if (TimeExceeded(intervalTime))
+		{
+			stopMotors();
+			break;
+		}
+		else if (Serial.available())
 		{
 			char incommingChar = Serial.read();
 			buffer[incremental_pointer] = int8_t(incommingChar);
-			incremental_pointer ++;
+			incremental_pointer++;
+			firstTime = false;
+		} else if(firstTime){
+			break;
 		}
 	}
 	if(incremental_pointer == 3){
